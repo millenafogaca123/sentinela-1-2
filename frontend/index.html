@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div class="container">
+  <img src="css/cuidado.png" alt="">
   <h2>🏥 Sistema Hospitalar</h2>
   <input id="usuario" placeholder="Usuário">
   <input id="senha" type="password" placeholder="Senha">
@@ -13,7 +14,7 @@
 
 <script>
 function login() {
-  fetch("/login", {
+  fetch("http://localhost:3000/login", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
