@@ -1,64 +1,82 @@
-<!DOCTYPE html>
-<html>
-<head>
+<!DOCTYPE html> <html lang="pt-BR"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema Hospitalar</title>
+
 <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-<!DOCTYPE html> <html> <head> <link rel="stylesheet" href="css/style.css"> </head> <body>
+
+</head> <body>
 <div class="container">
 
-    <img src="css/cuidado.png" alt="">
+    <img src="css/cuidado.png" alt="Sistema Hospitalar">
 
     <h2>🏥 Sistema Hospitalar</h2>
 
-    <input id="usuario" placeholder="Usuário">
+    <input
+        id="usuario"
+        type="text"
+        placeholder="Usuário"
+    >
 
-    <input id="senha" type="password" placeholder="Senha">
+    <input
+        id="senha"
+        type="password"
+        placeholder="Senha"
+    >
 
-    <button onclick="login()">Entrar</button>
+    <button onclick="login()">
+        Entrar
+    </button>
 
-    <button onclick="window.print()" style="
-        margin-top: 1rem;
-        padding: 10px 20px;
-        font-weight: bold;
-        cursor: pointer;
-    ">
+    <button onclick="window.print()" class="print-button">
         ⬇️ Baixar PDF
     </button>
 
 </div>
 
 <script>
+
     function login() {
+
+        const usuario = document.getElementById("usuario").value;
+        const senha = document.getElementById("senha").value;
+
         fetch("http://localhost:3000/login", {
             method: "POST",
+
             headers: {
                 "Content-Type": "application/json"
             },
+
             body: JSON.stringify({
-                usuario: usuario.value,
-                senha: senha.value
+                usuario: usuario,
+                senha: senha
             })
         })
-        .then(r => r.json())
+
+        .then(response => response.json())
+
         .then(data => {
 
             if (data.tipo === "triagem") {
                 location.href = "triagem.html";
             }
 
-            if (data.tipo === "medico") {
+            else if (data.tipo === "medico") {
                 location.href = "medico.html";
             }
 
-            if (data.tipo === "atendimento") {
+            else if (data.tipo === "atendimento") {
                 location.href = "atendimento.html";
             }
 
+        })
+
+        .catch(error => {
+            console.error("Erro:", error);
+            alert("Não foi possível conectar ao servidor.");
         });
+
     }
+
 </script>
 
-</body> 
-</html>
-
+</body> </html>
