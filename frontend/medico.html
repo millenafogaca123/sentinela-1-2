@@ -1,64 +1,340 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
+
 <head>
-  <link rel="stylesheet" href="css/style.css">
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Painel Médico</title>
+
+  <link
+    rel="stylesheet"
+    href="css/style.css"
+  >
+
 </head>
+
 
 <body>
 
 <div class="container">
 
-  <h2>💊 Medicações Prescritas</h2>
+  <h2>👨‍⚕️ Painel Médico</h2>
 
-  <!-- IMPLEMENTADO: local onde a lista de medicações será exibida -->
-  <div id="listaMedicacoes"></div>
+  <p>
+    Pacientes aguardando atendimento médico
+  </p>
+
+
+  <div id="listaTriagens">
+
+    Carregando pacientes...
+
+  </div>
+
+
+  <hr>
+
+
+  <h3>📋 Registrar Consulta</h3>
+
+
+  <input
+    id="paciente"
+    placeholder="Nome do paciente"
+  >
+
+
+  <textarea
+    id="diagnostico"
+    placeholder="Diagnóstico"
+  ></textarea>
+
+
+  <textarea
+    id="medicacao"
+    placeholder="Medicação prescrita"
+  ></textarea>
+
+
+  <textarea
+    id="obs"
+    placeholder="Observações"
+  ></textarea>
+
+
+  <button onclick="salvarConsulta()">
+    💾 Salvar Consulta
+  </button>
+
+
+  <br><br>
+
+
+  <button
+    onclick="window.location.href='medicacao.html'"
+  >
+    💊 Ver Medicações
+  </button>
+
+
+  <br><br>
+
+
+  <button
+    onclick="window.location.href='alta.html'"
+  >
+    🏥 Alta Hospitalar
+  </button>
+
+
+  <br><br>
+
+
+  <button
+    onclick="window.location.href='index.html'"
+  >
+    ← Sair
+  </button>
 
 </div>
 
+
 <script>
 
-// IMPLEMENTADO: busca as consultas salvas e mostra as medicações
-function carregarMedicacoesPrescritas() {
-  fetch("/medicacoes")
-    .then(r => r.json())
-    .then(data => {
-      const div = document.getElementById("listaMedicacoes");
 
-      div.innerHTML = "";
+/* ==========================================
+   CARREGAR TRIAGENS
+========================================== */
 
-      if (data.length === 0) {
-        div.innerHTML = "<p>Nenhuma medicação prescrita.</p>";
-        return;
-      }
+async function carregarTriagens() {
 
-      data.forEach(c => {
-        div.innerHTML += `
-          <div class="card">
-            <h3>${c.paciente}</h3>
+  try {
 
-            <p>
-              <b>Medicação:</b>
-              ${c.medicacao}
-            </p>
+    const resposta =
+      await fetch("/triagens");
 
-            <p>
-              <b>Diagnóstico:</b>
-              ${c.diagnostico}
-            </p>
 
-            <p>
-              <b>Observações:</b>
-              ${c.obs || "Nenhuma"}
-            </p>
-          </div>
-        `;
-      });
+    const triagens =
+      await resposta.json();
+
+
+    const lista =
+      document.getElementById(
+        "listaTriagens"
+      );
+
+
+    lista.innerHTML = "";
+
+
+    if (triagens.length === 0) {
+
+      lista.innerHTML =
+        "<p>Nenhuma triagem aguardando médico.</p>";
+
+      return;
+
+    }
+
+
+    triagens.forEach(triagem => {
+
+      lista.innerHTML += `
+
+        <div class="card">
+
+          <h3>
+            👤 ${triagem.nome}
+          </h3>
+
+          <p>
+            <b>Sintoma:</b>
+            ${triagem.sintoma}
+          </p>
+
+          <p>
+            <b>Temperatura:</b>
+            ${triagem.temperatura || "Não informada"}
+          </p>
+
+          <p>
+            <b>Alergias:</b>
+            ${triagem.alergia || "Nenhuma informada"}
+          </p>
+
+          <p>
+            <b>Risco:</b>
+            ${triagem.risco.toUpperCase()}
+          </p>
+
+          <button
+            onclick="selecionarPaciente('${triagem.nome.replace(/'/g, "\\'")}')"
+          >
+            Atender paciente
+          </button>
+
+        </div>
+
+      `;
+
     });
+
+  }
+
+  catch (erro) {
+
+    console.error(erro);
+
+    document.getElementById(
+      "listaTriagens"
+    ).innerHTML =
+      "<p>Erro ao carregar triagens.</p>";
+
+  }
+
 }
 
-carregarMedicacoesPrescritas();
+
+/* ==========================================
+   SELECIONAR PACIENTE
+========================================== */
+
+function selecionarPaciente(nome) {
+
+  document.getElementById(
+    "paciente"
+  ).value = nome;
+
+  window.scrollTo({
+    top: document.body.scrollHeight,
+    behavior: "smooth"
+  });
+
+}
+
+
+/* ==========================================
+   SALVAR CONSULTA
+========================================== */
+
+async function salvarConsulta() {
+
+  const paciente =
+    document.getElementById(
+      "paciente"
+    ).value;
+
+  const diagnostico =
+    document.getElementById(
+      "diagnostico"
+    ).value;
+
+  const medicacao =
+    document.getElementById(
+      "medicacao"
+    ).value;
+
+  const obs =
+    document.getElementById(
+      "obs"
+    ).value;
+
+
+  if (!paciente || !diagnostico) {
+
+    alert(
+      "Informe o paciente e o diagnóstico."
+    );
+
+    return;
+
+  }
+
+
+  try {
+
+    const resposta =
+      await fetch("/consulta", {
+
+        method: "POST",
+
+        headers: {
+
+          "Content-Type":
+            "application/json"
+
+        },
+
+        body: JSON.stringify({
+
+          paciente,
+          diagnostico,
+          medicacao,
+          obs
+
+        })
+
+      });
+
+
+    const data =
+      await resposta.json();
+
+
+    if (!resposta.ok) {
+
+      throw new Error(
+        "Erro ao salvar consulta."
+      );
+
+    }
+
+
+    alert(
+      "✓ Consulta salva com sucesso!"
+    );
+
+
+    document.getElementById(
+      "diagnostico"
+    ).value = "";
+
+
+    document.getElementById(
+      "medicacao"
+    ).value = "";
+
+
+    document.getElementById(
+      "obs"
+    ).value = "";
+
+
+  }
+
+  catch (erro) {
+
+    console.error(erro);
+
+    alert(
+      "Não foi possível salvar a consulta."
+    );
+
+  }
+
+}
+
+
+carregarTriagens();
 
 </script>
 
 </body>
+
 </html>
