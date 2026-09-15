@@ -1,824 +1,813 @@
-const express = require("express");
-const fs = require("fs");
-const path = require("path");
-const cors = require("cors");
-
-const app = express();
-
-// IMPORTANTE PARA O RENDER
-const PORT = process.env.PORT || 3000;
+/* =========================================================
+   SISTEMA HOSPITALAR - HOSPITAL BOM CUIDADO
+   SCRIPT PRINCIPAL
+========================================================= */
 
 
-/* ==========================================
-   CONFIGURAÇÕES
-========================================== */
+/* =========================================================
+   CONFIGURAÇÃO DA API
+========================================================= */
 
-app.use(cors());
+// IMPORTANTE:
+// Não coloque http://localhost:3000 aqui.
+// Como o frontend e backend estão no mesmo Render,
+// usamos apenas as rotas.
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-
-// Caminho da pasta frontend
-app.use(express.static(
-  path.join(__dirname, "../frontend")
-));
+const API = "";
 
 
-/* ==========================================
-   BANCO DE DADOS
-========================================== */
+/* =========================================================
+   FUNÇÃO AUXILIAR PARA REQUISIÇÕES
+========================================================= */
 
-const DB_FILE = path.join(__dirname, "db.json");
+async function requisicao(url, opcoes = {}) {
 
+    try {
 
-function criarBanco() {
+        const resposta = await fetch(API + url, {
 
-  const bancoInicial = {
-    usuarios: [
-      {
-        usuario: "atendimento",
-        senha: "123456",
-        tipo: "atendimento"
-      },
-      {
-        usuario: "admin",
-        senha: "123456",
-        tipo: "admin"
-      }
-    ],
+            ...opcoes,
 
-    pacientes: [],
-    triagens: [],
-    consultas: [],
-    altas: []
-  };
+            headers: {
 
-  fs.writeFileSync(
-    DB_FILE,
-    JSON.stringify(bancoInicial, null, 2)
-  );
+                "Content-Type": "application/json",
 
-  return bancoInicial;
-}
+                ...(opcoes.headers || {})
+
+            }
+
+        });
 
 
-function readDB() {
+        let dados;
 
-  try {
+        try {
 
-    if (!fs.existsSync(DB_FILE)) {
-      return criarBanco();
+            dados = await resposta.json();
+
+        } catch {
+
+            dados = {};
+
+        }
+
+
+        if (!resposta.ok) {
+
+            throw new Error(
+                dados.erro ||
+                dados.mensagem ||
+                "Erro na comunicação com o servidor."
+            );
+
+        }
+
+
+        return dados;
+
+    } catch (erro) {
+
+        console.error("Erro:", erro);
+
+        throw erro;
+
     }
 
-    const conteudo = fs.readFileSync(
-      DB_FILE,
-      "utf8"
-    );
-
-    if (!conteudo.trim()) {
-      return criarBanco();
-    }
-
-    return JSON.parse(conteudo);
-
-  } catch (erro) {
-
-    console.error("Erro ao ler banco:", erro);
-
-    return criarBanco();
-
-  }
-
 }
 
 
-function writeDB(data) {
-
-  try {
-
-    fs.writeFileSync(
-      DB_FILE,
-      JSON.stringify(data, null, 2)
-    );
-
-  } catch (erro) {
-
-    console.error("Erro ao salvar banco:", erro);
-
-  }
-
-}
-
-
-/* ==========================================
-   TESTE DO SERVIDOR
-========================================== */
-
-app.get("/health", (req, res) => {
-
-  res.json({
-    sucesso: true,
-    mensagem: "Servidor do Hospital Bom Cuidado funcionando!",
-    porta: PORT
-  });
-
-});
-
-
-/* ==========================================
+/* =========================================================
    LOGIN
-========================================== */
+========================================================= */
 
-app.post("/login", (req, res) => {
+document.addEventListener("DOMContentLoaded", () => {
 
-  try {
-
-    const db = readDB();
-
-    const usuario = req.body.usuario;
-    const senha = req.body.senha;
+    const formularioLogin =
+        document.getElementById("loginForm");
 
 
-    if (!usuario || !senha) {
-
-      return res.status(400).json({
-        sucesso: false,
-        erro: "Informe usuário e senha."
-      });
-
+    if (!formularioLogin) {
+        return;
     }
 
 
-    const user = db.usuarios.find(
-      u =>
-        u.usuario === usuario &&
-        u.senha === senha
-    );
+    formularioLogin.addEventListener("submit", async (event) => {
+
+        event.preventDefault();
 
 
-    if (!user) {
+        const campoUsuario =
+            document.getElementById("usuario");
 
-      return res.status(401).json({
-        sucesso: false,
-        erro: "Usuário ou senha inválidos."
-      });
-
-    }
+        const campoSenha =
+            document.getElementById("senha");
 
 
-    return res.json({
+        if (!campoUsuario || !campoSenha) {
 
-      sucesso: true,
+            alert(
+                "Não foi possível encontrar os campos de login."
+            );
 
-      usuario: user.usuario,
+            return;
 
-      tipo: user.tipo
+        }
+
+
+        const usuario =
+            campoUsuario.value.trim();
+
+        const senha =
+            campoSenha.value.trim();
+
+
+        if (!usuario || !senha) {
+
+            alert(
+                "Digite o usuário e a senha."
+            );
+
+            return;
+
+        }
+
+
+        const botao =
+            formularioLogin.querySelector("button");
+
+
+        if (botao) {
+
+            botao.disabled = true;
+
+            botao.textContent =
+                "Entrando...";
+
+        }
+
+
+        try {
+
+            const dados =
+                await requisicao("/login", {
+
+                    method: "POST",
+
+                    body: JSON.stringify({
+
+                        usuario: usuario,
+
+                        senha: senha
+
+                    })
+
+                });
+
+
+            console.log(
+                "Login realizado:",
+                dados
+            );
+
+
+            // Salva informações da sessão
+            localStorage.setItem(
+                "usuario",
+                dados.usuario
+            );
+
+            localStorage.setItem(
+                "tipo",
+                dados.tipo
+            );
+
+
+            localStorage.setItem(
+                "logado",
+                "true"
+            );
+
+
+            /*
+               REDIRECIONAMENTO POR TIPO DE USUÁRIO
+            */
+
+            if (dados.tipo === "medico") {
+
+                window.location.href =
+                    "medico.html";
+
+            }
+
+            else if (dados.tipo === "triagem") {
+
+                window.location.href =
+                    "triagem.html";
+
+            }
+
+            else if (dados.tipo === "atendimento") {
+
+                window.location.href =
+                    "atendimento.html";
+
+            }
+
+            else {
+
+                window.location.href =
+                    "dashboard.html";
+
+            }
+
+
+        } catch (erro) {
+
+            alert(
+                erro.message ||
+                "Usuário ou senha inválidos."
+            );
+
+        } finally {
+
+            if (botao) {
+
+                botao.disabled = false;
+
+                botao.textContent =
+                    "Entrar";
+
+            }
+
+        }
 
     });
-
-  } catch (erro) {
-
-    console.error("Erro no login:", erro);
-
-    return res.status(500).json({
-      sucesso: false,
-      erro: "Erro interno no servidor."
-    });
-
-  }
 
 });
 
 
-/* ==========================================
-   ATENDIMENTO
-========================================== */
+/* =========================================================
+   VERIFICAR LOGIN
+========================================================= */
 
-app.post("/atendimento", (req, res) => {
+function verificarLogin() {
 
-  try {
+    const logado =
+        localStorage.getItem("logado");
 
-    const db = readDB();
+    const usuario =
+        localStorage.getItem("usuario");
+
+    const tipo =
+        localStorage.getItem("tipo");
 
 
-    const paciente = {
+    if (
+        logado !== "true" ||
+        !usuario ||
+        !tipo
+    ) {
 
-      id: Date.now(),
+        window.location.href =
+            "index.html";
 
-      nome:
-        req.body.nome || "",
+        return false;
 
-      documento:
-        req.body.documento || req.body.cpf || "",
+    }
 
-      dataNascimento:
-        req.body.dataNascimento || "",
 
-      sexo:
-        req.body.sexo || "",
+    return true;
 
-      nomeMae:
-        req.body.nomeMae || "",
+}
 
-      estadoCivil:
-        req.body.estadoCivil || "",
 
-      endereco:
-        req.body.endereco || "",
+/* =========================================================
+   SAIR DO SISTEMA
+========================================================= */
 
-      telefone:
-        req.body.telefone || "",
+function sair() {
 
-      email:
-        req.body.email || "",
+    localStorage.removeItem("usuario");
 
-      contatoEmergencia:
-        req.body.contatoEmergencia || "",
+    localStorage.removeItem("tipo");
 
-      tipo:
-        req.body.tipo || "",
+    localStorage.removeItem("logado");
 
-      status:
-        "aguardando_triagem",
 
-      createdAt:
-        new Date().toISOString()
+    window.location.href =
+        "index.html";
+
+}
+
+
+/* =========================================================
+   PEGAR USUÁRIO LOGADO
+========================================================= */
+
+function usuarioLogado() {
+
+    return {
+
+        usuario:
+            localStorage.getItem("usuario"),
+
+        tipo:
+            localStorage.getItem("tipo")
 
     };
 
-
-    if (!paciente.nome) {
-
-      return res.status(400).json({
-        sucesso: false,
-        erro: "O nome do paciente é obrigatório."
-      });
-
-    }
+}
 
 
-    db.pacientes.push(paciente);
+/* =========================================================
+   CADASTRAR PACIENTE
+========================================================= */
 
-    writeDB(db);
+async function cadastrarPaciente(dadosPaciente) {
 
+    try {
 
-    return res.status(201).json({
+        const resultado =
+            await requisicao(
+                "/atendimento",
+                {
 
-      sucesso: true,
+                    method: "POST",
 
-      mensagem:
-        "Paciente cadastrado com sucesso.",
+                    body: JSON.stringify(
+                        dadosPaciente
+                    )
 
-      paciente
-
-    });
-
-  } catch (erro) {
-
-    console.error("Erro no atendimento:", erro);
-
-    return res.status(500).json({
-      sucesso: false,
-      erro: "Erro ao cadastrar paciente."
-    });
-
-  }
-
-});
+                }
+            );
 
 
-/* ==========================================
-   LISTAR PACIENTES
-========================================== */
-
-app.get("/pacientes", (req, res) => {
-
-  try {
-
-    const db = readDB();
-
-    res.json(db.pacientes);
-
-  } catch (erro) {
-
-    console.error(erro);
-
-    res.status(500).json({
-      erro: "Erro ao buscar pacientes."
-    });
-
-  }
-
-});
+        alert(
+            resultado.mensagem ||
+            "Paciente cadastrado com sucesso."
+        );
 
 
-/* ==========================================
-   TRIAGEM
-========================================== */
-
-app.post("/triagem", (req, res) => {
-
-  try {
-
-    const db = readDB();
+        return resultado;
 
 
-    let risco = req.body.risco;
+    } catch (erro) {
+
+        alert(
+            erro.message ||
+            "Erro ao cadastrar paciente."
+        );
 
 
-    const temperatura =
-      Number(req.body.temperatura);
-
-
-    // Classificação automática
-    if (temperatura >= 39) {
-
-      risco = "vermelho";
-
-    } else if (temperatura >= 38) {
-
-      risco = "amarelo";
-
-    } else if (!risco) {
-
-      risco = "verde";
+        return null;
 
     }
 
-
-    const triagem = {
-
-      id: Date.now(),
-
-      nome:
-        req.body.nome || "",
-
-      sintoma:
-        req.body.sintoma || "",
-
-      temperatura:
-        temperatura || 0,
-
-      alergia:
-        req.body.alergia || "",
-
-      observacao:
-        req.body.observacao || "",
-
-      risco,
-
-      status:
-        "aguardando_medico",
-
-      createdAt:
-        new Date().toISOString()
-
-    };
+}
 
 
-    if (!triagem.nome) {
+/* =========================================================
+   BUSCAR PACIENTES
+========================================================= */
 
-      return res.status(400).json({
-        sucesso: false,
-        erro: "Informe o nome do paciente."
-      });
+async function buscarPacientes() {
+
+    try {
+
+        const pacientes =
+            await requisicao(
+                "/pacientes"
+            );
+
+
+        return pacientes;
+
+
+    } catch (erro) {
+
+        console.error(
+            "Erro ao buscar pacientes:",
+            erro
+        );
+
+
+        alert(
+            "Não foi possível carregar os pacientes."
+        );
+
+
+        return [];
 
     }
 
-
-    db.triagens.push(triagem);
-
-
-    // Atualiza o paciente
-    const paciente =
-      db.pacientes.find(
-        p => p.nome === triagem.nome
-      );
+}
 
 
-    if (paciente) {
+/* =========================================================
+   CADASTRAR TRIAGEM
+========================================================= */
 
-      paciente.status =
-        "aguardando_medico";
+async function cadastrarTriagem(dadosTriagem) {
 
-    }
+    try {
 
+        const resultado =
+            await requisicao(
+                "/triagem",
+                {
 
-    writeDB(db);
+                    method: "POST",
 
+                    body: JSON.stringify(
+                        dadosTriagem
+                    )
 
-    return res.status(201).json({
-
-      sucesso: true,
-
-      mensagem:
-        "Triagem registrada com sucesso.",
-
-      triagem
-
-    });
-
-  } catch (erro) {
-
-    console.error("Erro na triagem:", erro);
-
-    return res.status(500).json({
-      sucesso: false,
-      erro: "Erro ao registrar triagem."
-    });
-
-  }
-
-});
+                }
+            );
 
 
-/* ==========================================
-   LISTAR TRIAGENS
-========================================== */
-
-app.get("/triagens", (req, res) => {
-
-  try {
-
-    const db = readDB();
-
-    res.json(db.triagens);
-
-  } catch (erro) {
-
-    console.error(erro);
-
-    res.status(500).json({
-      erro: "Erro ao buscar triagens."
-    });
-
-  }
-
-});
+        alert(
+            resultado.mensagem ||
+            "Triagem registrada com sucesso."
+        );
 
 
-/* ==========================================
-   CONSULTA MÉDICA
-========================================== */
-
-app.post("/consulta", (req, res) => {
-
-  try {
-
-    const db = readDB();
+        return resultado;
 
 
-    const consulta = {
+    } catch (erro) {
 
-      id: Date.now(),
-
-      paciente:
-        req.body.paciente || "",
-
-      diagnostico:
-        req.body.diagnostico || "",
-
-      medicacao:
-        req.body.medicacao || "",
-
-      obs:
-        req.body.obs || "",
-
-      createdAt:
-        new Date().toISOString()
-
-    };
+        alert(
+            erro.message ||
+            "Erro ao registrar triagem."
+        );
 
 
-    if (!consulta.paciente) {
-
-      return res.status(400).json({
-        sucesso: false,
-        erro: "Informe o paciente."
-      });
+        return null;
 
     }
 
-
-    db.consultas.push(consulta);
-
-
-    // Atualiza paciente
-    const paciente =
-      db.pacientes.find(
-        p => p.nome === consulta.paciente
-      );
+}
 
 
-    if (paciente) {
+/* =========================================================
+   BUSCAR TRIAGENS
+========================================================= */
 
-      paciente.status =
-        "em_acompanhamento";
+async function buscarTriagens() {
+
+    try {
+
+        const triagens =
+            await requisicao(
+                "/triagens"
+            );
+
+
+        return triagens;
+
+
+    } catch (erro) {
+
+        console.error(
+            "Erro ao buscar triagens:",
+            erro
+        );
+
+
+        alert(
+            "Não foi possível carregar as triagens."
+        );
+
+
+        return [];
 
     }
 
+}
 
-    writeDB(db);
 
+/* =========================================================
+   CADASTRAR CONSULTA
+========================================================= */
 
-    return res.status(201).json({
+async function cadastrarConsulta(dadosConsulta) {
 
-      sucesso: true,
+    try {
 
-      mensagem:
-        "Consulta registrada com sucesso.",
+        const resultado =
+            await requisicao(
+                "/consulta",
+                {
 
-      consulta
+                    method: "POST",
 
-    });
+                    body: JSON.stringify(
+                        dadosConsulta
+                    )
 
-  } catch (erro) {
+                }
+            );
 
-    console.error("Erro na consulta:", erro);
 
-    return res.status(500).json({
-      sucesso: false,
-      erro: "Erro ao registrar consulta."
-    });
+        alert(
+            resultado.mensagem ||
+            "Consulta registrada com sucesso."
+        );
 
-  }
 
-});
+        return resultado;
 
 
-/* ==========================================
-   LISTAR CONSULTAS
-========================================== */
+    } catch (erro) {
 
-app.get("/consultas", (req, res) => {
+        alert(
+            erro.message ||
+            "Erro ao registrar consulta."
+        );
 
-  try {
 
-    const db = readDB();
-
-    res.json(db.consultas);
-
-  } catch (erro) {
-
-    console.error(erro);
-
-    res.status(500).json({
-      erro: "Erro ao buscar consultas."
-    });
-
-  }
-
-});
-
-
-/* ==========================================
-   MEDICAÇÕES
-========================================== */
-
-app.get("/medicacoes", (req, res) => {
-
-  try {
-
-    const db = readDB();
-
-    res.json(db.consultas);
-
-  } catch (erro) {
-
-    console.error(erro);
-
-    res.status(500).json({
-      erro: "Erro ao buscar medicações."
-    });
-
-  }
-
-});
-
-
-/* ==========================================
-   LISTA DE MEDICAMENTOS
-========================================== */
-
-app.get("/lista-medicacoes", (req, res) => {
-
-  res.json([
-
-    "Dipirona",
-    "Paracetamol",
-    "Ibuprofeno",
-    "Amoxicilina",
-    "Azitromicina",
-    "Loratadina",
-    "Omeprazol",
-    "Buscopan",
-    "Dramin",
-    "Soro fisiológico"
-
-  ]);
-
-});
-
-
-/* ==========================================
-   ALTA HOSPITALAR
-========================================== */
-
-app.post("/alta", (req, res) => {
-
-  try {
-
-    const db = readDB();
-
-
-    const alta = {
-
-      id: Date.now(),
-
-      paciente:
-        req.body.paciente || "",
-
-      nascimento:
-        req.body.nascimento || "",
-
-      cpf:
-        req.body.cpf || "",
-
-      telefone:
-        req.body.telefone || "",
-
-      dataEntrada:
-        req.body.dataEntrada || "",
-
-      dataAlta:
-        req.body.dataAlta || "",
-
-      setor:
-        req.body.setor || "",
-
-      leito:
-        req.body.leito || "",
-
-      diagnosticoEntrada:
-        req.body.diagnosticoEntrada || "",
-
-      diagnosticoFinal:
-        req.body.diagnosticoFinal || "",
-
-      tratamento:
-        req.body.tratamento || "",
-
-      estado:
-        req.body.estado || "",
-
-      tipoAlta:
-        req.body.tipoAlta || "",
-
-      semFebre:
-        req.body.semFebre || false,
-
-      alimentacao:
-        req.body.alimentacao || false,
-
-      clinicamenteEstavel:
-        req.body.clinicamenteEstavel || false,
-
-      medicamentos:
-        req.body.medicamentos || "",
-
-      cuidadosMedicamentos:
-        req.body.cuidadosMedicamentos || "",
-
-      orientacoes:
-        req.body.orientacoes || "",
-
-      retorno:
-        req.body.retorno || "",
-
-      especialidade:
-        req.body.especialidade || "",
-
-      sinaisAlerta:
-        req.body.sinaisAlerta || "",
-
-      medico:
-        req.body.medico || "",
-
-      crm:
-        req.body.crm || "",
-
-      observacoes:
-        req.body.observacoes || "",
-
-      createdAt:
-        new Date().toISOString()
-
-    };
-
-
-    if (!alta.paciente) {
-
-      return res.status(400).json({
-        sucesso: false,
-        erro: "Informe o paciente."
-      });
+        return null;
 
     }
 
-
-    db.altas.push(alta);
-
-
-    // Atualiza paciente
-    const paciente =
-      db.pacientes.find(
-        p => p.nome === alta.paciente
-      );
+}
 
 
-    if (paciente) {
+/* =========================================================
+   BUSCAR CONSULTAS
+========================================================= */
 
-      paciente.status =
-        "alta";
+async function buscarConsultas() {
+
+    try {
+
+        const consultas =
+            await requisicao(
+                "/consultas"
+            );
+
+
+        return consultas;
+
+
+    } catch (erro) {
+
+        console.error(
+            "Erro ao buscar consultas:",
+            erro
+        );
+
+
+        alert(
+            "Não foi possível carregar as consultas."
+        );
+
+
+        return [];
 
     }
 
-
-    writeDB(db);
-
-
-    return res.status(201).json({
-
-      sucesso: true,
-
-      mensagem:
-        "Alta hospitalar registrada.",
-
-      alta
-
-    });
-
-  } catch (erro) {
-
-    console.error("Erro na alta:", erro);
-
-    return res.status(500).json({
-      sucesso: false,
-      erro: "Erro ao registrar alta."
-    });
-
-  }
-
-});
+}
 
 
-/* ==========================================
-   LISTAR ALTAS
-========================================== */
+/* =========================================================
+   BUSCAR MEDICAMENTOS
+========================================================= */
 
-app.get("/altas", (req, res) => {
+async function buscarMedicamentos() {
 
-  try {
+    try {
 
-    const db = readDB();
-
-    res.json(db.altas);
-
-  } catch (erro) {
-
-    console.error(erro);
-
-    res.status(500).json({
-      erro: "Erro ao buscar altas."
-    });
-
-  }
-
-});
+        const medicamentos =
+            await requisicao(
+                "/lista-medicacoes"
+            );
 
 
-/* ==========================================
-   ROTA PRINCIPAL
-========================================== */
-
-app.get("/", (req, res) => {
-
-  res.sendFile(
-    path.join(__dirname, "../frontend/index.html")
-  );
-
-});
+        return medicamentos;
 
 
-/* ==========================================
-   INICIAR SERVIDOR
-========================================== */
+    } catch (erro) {
 
-app.listen(PORT, "0.0.0.0", () => {
+        console.error(
+            "Erro ao buscar medicamentos:",
+            erro
+        );
 
-  console.log(
-    `🏥 Hospital Bom Cuidado funcionando na porta ${PORT}`
-  );
 
-});
+        return [];
+
+    }
+
+}
+
+
+/* =========================================================
+   REGISTRAR ALTA
+========================================================= */
+
+async function registrarAlta(dadosAlta) {
+
+    try {
+
+        const resultado =
+            await requisicao(
+                "/alta",
+                {
+
+                    method: "POST",
+
+                    body: JSON.stringify(
+                        dadosAlta
+                    )
+
+                }
+            );
+
+
+        alert(
+            resultado.mensagem ||
+            "Alta hospitalar registrada."
+        );
+
+
+        return resultado;
+
+
+    } catch (erro) {
+
+        alert(
+            erro.message ||
+            "Erro ao registrar alta."
+        );
+
+
+        return null;
+
+    }
+
+}
+
+
+/* =========================================================
+   BUSCAR ALTAS
+========================================================= */
+
+async function buscarAltas() {
+
+    try {
+
+        const altas =
+            await requisicao(
+                "/altas"
+            );
+
+
+        return altas;
+
+
+    } catch (erro) {
+
+        console.error(
+            "Erro ao buscar altas:",
+            erro
+        );
+
+
+        alert(
+            "Não foi possível carregar as altas."
+        );
+
+
+        return [];
+
+    }
+
+}
+
+
+/* =========================================================
+   TESTAR SERVIDOR
+========================================================= */
+
+async function testarServidor() {
+
+    try {
+
+        const resposta =
+            await requisicao(
+                "/health"
+            );
+
+
+        console.log(
+            "Servidor funcionando:",
+            resposta
+        );
+
+
+        return true;
+
+
+    } catch (erro) {
+
+        console.error(
+            "Servidor indisponível:",
+            erro
+        );
+
+
+        return false;
+
+    }
+
+}
+
+
+/* =========================================================
+   MOSTRAR USUÁRIO NA INTERFACE
+========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        const elementoUsuario =
+            document.getElementById(
+                "usuarioLogado"
+            );
+
+
+        if (elementoUsuario) {
+
+            elementoUsuario.textContent =
+                localStorage.getItem(
+                    "usuario"
+                ) || "";
+
+        }
+
+
+        const elementoTipo =
+            document.getElementById(
+                "tipoUsuario"
+            );
+
+
+        if (elementoTipo) {
+
+            elementoTipo.textContent =
+                localStorage.getItem(
+                    "tipo"
+                ) || "";
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   EXPOR FUNÇÕES
+   Permite que outros arquivos HTML/JS utilizem as funções.
+========================================================= */
+
+window.cadastrarPaciente =
+    cadastrarPaciente;
+
+window.buscarPacientes =
+    buscarPacientes;
+
+window.cadastrarTriagem =
+    cadastrarTriagem;
+
+window.buscarTriagens =
+    buscarTriagens;
+
+window.cadastrarConsulta =
+    cadastrarConsulta;
+
+window.buscarConsultas =
+    buscarConsultas;
+
+window.buscarMedicamentos =
+    buscarMedicamentos;
+
+window.registrarAlta =
+    registrarAlta;
+
+window.buscarAltas =
+    buscarAltas;
+
+window.verificarLogin =
+    verificarLogin;
+
+window.usuarioLogado =
+    usuarioLogado;
+
+window.sair =
+    sair;
+
+window.testarServidor =
+    testarServidor;
