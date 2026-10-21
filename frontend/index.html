@@ -161,6 +161,14 @@ async function login() {
 
 }
 
+  // Atalho secreto: ctrl + A redireciona para admin2.html
+window.addEventListener("keydown", function(e) {
+  if (e.ctrlKey && e.altKey && (e.key === "a" || e.key === "A")) {
+    e.preventDefault();
+    window.location.href = "admin2.html";
+  
+}
+});
 </script>
 
 </body>
