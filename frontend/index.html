@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
 
@@ -6,58 +5,173 @@
 
   <meta charset="UTF-8">
 
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
-  <title>Início - Hospital Bom Cuidado</title>
+  <title>Login - Sistema Hospitalar</title>
 
-  <link rel="stylesheet" href="css/style.css">
+  <link
+    rel="stylesheet"
+    href="css/style.css"
+  >
 
 </head>
 
+
 <body>
 
-<h2 style="text-align:center; margin-top:35px;">
-  🏥 Bem-vindo ao Hospital Bom Cuidado
-</h2>
+<div class="container">
 
-<p style="text-align:center;">
-  Sistema de gerenciamento hospitalar
-</p>
+  <img
+    src="css/cuidado.png"
+    alt="Hospital Bom Cuidado"
+  >
 
-<div class="painel">
+  <h2>🏥 Sistema Hospitalar</h2>
 
-  <div class="card">
-    <h2>📝</h2>
-    <h3>Atendimento</h3>
-    <p>Cadastro de pacientes.</p>
-    <a href="atendimento.html">Acessar</a>
-  </div>
 
-  <div class="card">
-    <h2>🩺</h2>
-    <h3>Triagem</h3>
-    <p>Controle de triagem.</p>
-    <a href="triagem.html">Acessar</a>
-  </div>
+  <input
+    id="usuario"
+    type="text"
+    placeholder="Usuário"
+  >
 
-  <div class="card">
-    <h2>👨‍⚕️</h2>
-    <h3>Médico</h3>
-    <p>Área médica.</p>
-    <a href="medico.html">Acessar</a>
-  </div>
 
-  <div class="card">
-    <h2>⚙️</h2>
-    <h3>Administração</h3>
-    <p>Gerenciamento do sistema.</p>
-    <a href="admin2.html">Acessar</a>
-  </div>
+  <input
+    id="senha"
+    type="password"
+    placeholder="Senha"
+  >
+
+
+  <button onclick="login()">
+    Entrar
+  </button>
 
 </div>
 
-<script src="menu.js"></script>
+
+<script>
+
+async function login() {
+
+  const usuario =
+    document.getElementById("usuario").value.trim();
+
+  const senha =
+    document.getElementById("senha").value;
+
+
+  if (!usuario || !senha) {
+
+    alert(
+      "Preencha o usuário e a senha."
+    );
+
+    return;
+
+  }
+
+
+  try {
+
+    const resposta =
+      await fetch("/login", {
+
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+
+          usuario,
+          senha
+
+        })
+
+      });
+
+
+    const data =
+      await resposta.json();
+
+
+    console.log(
+      "Resposta do login:",
+      data
+    );
+
+
+    if (!resposta.ok) {
+
+      alert(
+        data.erro ||
+        "Login inválido."
+      );
+
+      return;
+
+    }
+
+
+    if (data.tipo === "triagem") {
+
+      window.location.href =
+        "triagem.html";
+
+    }
+
+    else if (data.tipo === "medico") {
+
+      window.location.href =
+        "medico.html";
+
+    }
+
+    else if (data.tipo === "atendimento") {
+
+      window.location.href =
+        "atendimento.html";
+
+    }
+
+    else {
+
+      alert(
+        "Tipo de usuário não reconhecido."
+      );
+
+    }
+
+  }
+
+  catch (erro) {
+
+    console.error(erro);
+
+    alert(
+      "Não foi possível conectar ao servidor."
+    );
+
+  }
+
+}
+
+  // Atalho secreto: ctrl + A redireciona para admin2.html
+window.addEventListener("keydown", function(e) {
+  if (e.ctrlKey && e.altKey && (e.key === "a" || e.key === "A")) {
+    e.preventDefault();
+    window.location.href = "admin2.html";
+  
+}
+});
+</script>
 
 </body>
+
 </html>
+queria fazer um botão de quando eu entrar em qualque pagina eu poderia voltar para o inicio e para as outras paginas também
