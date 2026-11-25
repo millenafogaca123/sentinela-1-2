@@ -1,116 +1,181 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atendimento</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+  <h2>Cadastro de Paciente</h2>
+
+  <form id="formPaciente">
+
+    <input
+      type="text"
+      id="nome"
+      placeholder="Nome completo"
+      required
+    >
+
+    <input
+      type="text"
+      id="documento"
+      placeholder="CPF"
+      required
+    >
+
+    <input
+      type="date"
+      id="dataNascimento"
+      required
+    >
+
+    <select id="sexo" required>
+      <option value="">Selecione o sexo</option>
+      <option value="Masculino">Masculino</option>
+      <option value="Feminino">Feminino</option>
+      <option value="Outro">Outro</option>
+    </select>
+
+    <input
+      type="text"
+      id="nomeMae"
+      placeholder="Nome da mãe"
+    >
+
+    <select id="estadoCivil">
+      <option value="">Estado civil</option>
+      <option value="Solteiro">Solteiro</option>
+      <option value="Casado">Casado</option>
+      <option value="Divorciado">Divorciado</option>
+      <option value="Viúvo">Viúvo</option>
+    </select>
+
+    <input
+      type="text"
+      id="endereco"
+      placeholder="Endereço"
+    >
+
+    <input
+      type="tel"
+      id="telefone"
+      placeholder="Telefone"
+    >
+
+    <input
+      type="email"
+      id="email"
+      placeholder="E-mail"
+    >
+
+    <input
+      type="text"
+      id="contatoEmergencia"
+      placeholder="Contato de emergência"
+    >
+
+    <h3>Informações do Atendimento</h3>
+
+    <select id="tipo" required>
+      <option value="">Tipo de atendimento</option>
+      <option value="Convenio">Convênio</option>
+      <option value="Particular">Particular</option>
+    </select>
+
+    <label for="foto">Foto do paciente:</label>
+    <input
+      type="file"
+      id="foto"
+      accept="image/*"
+    >
+
+    <button type="submit">
+      Cadastrar e enviar para triagem
+    </button>
+
+  </form>
+
+</div>
+
 <script>
 
 document
   .getElementById("formPaciente")
-  .addEventListener(
-    "submit",
-    cadastrar
-  );
-
+  .addEventListener("submit", cadastrar);
 
 async function cadastrar(event) {
 
   event.preventDefault();
 
-
   const paciente = {
 
-    nome:
-      document.getElementById("nome").value,
+    nome: document.getElementById("nome").value,
 
-    documento:
-      document.getElementById("documento").value,
+    documento: document.getElementById("documento").value,
 
-    dataNascimento:
-      document.getElementById("dataNascimento").value,
+    dataNascimento: document.getElementById("dataNascimento").value,
 
-    sexo:
-      document.getElementById("sexo").value,
+    sexo: document.getElementById("sexo").value,
 
-    nomeMae:
-      document.getElementById("nomeMae").value,
+    nomeMae: document.getElementById("nomeMae").value,
 
-    estadoCivil:
-      document.getElementById("estadoCivil").value,
+    estadoCivil: document.getElementById("estadoCivil").value,
 
-    endereco:
-      document.getElementById("endereco").value,
+    endereco: document.getElementById("endereco").value,
 
-    telefone:
-      document.getElementById("telefone").value,
+    telefone: document.getElementById("telefone").value,
 
-    email:
-      document.getElementById("email").value,
+    email: document.getElementById("email").value,
 
-    contatoEmergencia:
-      document.getElementById("contatoEmergencia").value,
+    contatoEmergencia: document.getElementById("contatoEmergencia").value,
 
-    tipo:
-      document.getElementById("tipo").value
+    tipo: document.getElementById("tipo").value
 
   };
 
-
   try {
 
-    const resposta =
-      await fetch("/atendimento", {
-
+    const resposta = await fetch(
+      "http://localhost:3000/atendimento",
+      {
         method: "POST",
 
         headers: {
-
-          "Content-Type":
-            "application/json"
-
+          "Content-Type": "application/json"
         },
 
-        body:
-          JSON.stringify(paciente)
-
-      });
-
-
-    const data =
-      await resposta.json();
-
-
-    if (!resposta.ok) {
-
-      throw new Error(
-        data.erro ||
-        "Erro ao cadastrar paciente."
-      );
-
-    }
-
-
-    alert(
-      "✓ Paciente cadastrado com sucesso!"
+        body: JSON.stringify(paciente)
+      }
     );
 
+    const data = await resposta.json();
 
-    document
-      .getElementById("formPaciente")
-      .reset();
+    if (!resposta.ok) {
+      throw new Error(
+        data.erro || "Erro ao cadastrar paciente."
+      );
+    }
 
+    alert("Paciente cadastrado com sucesso!");
 
-    /*
-      Envia o nome para a triagem.
-    */
+    document.getElementById("formPaciente").reset();
 
     window.location.href =
       "triagem.html?paciente=" +
-      encodeURIComponent(
-        paciente.nome
-      );
-
+      encodeURIComponent(paciente.nome);
 
   }
 
   catch (erro) {
 
-    console.error(erro);
+    console.error("Erro:", erro);
 
     alert(
       "Não foi possível cadastrar o paciente."
@@ -121,3 +186,6 @@ async function cadastrar(event) {
 }
 
 </script>
+
+</body>
+</html>
